@@ -119,9 +119,18 @@ class DataPuller:
                 batch_ids = list(range(current_id, batch_end - 1, -1))
 
             # Fetch batch concurrently
-            print(f"Fetching batch: IDs {batch_ids[0]} to {batch_ids[-1]} ({len(batch_ids)} items)")
             tasks = [self.pull_single_item(item_id) for item_id in batch_ids]
             items = await asyncio.gather(*tasks)
+            
+            # Get first valid item's datetime for batch info
+            first_item_datetime = None
+            for item in items:
+                if item is not None and 'time' in item:
+                    first_item_datetime = datetime.fromtimestamp(item['time']).strftime('%Y-%m-%d %H:%M:%S')
+                    break
+            
+            datetime_info = f" (first item: {first_item_datetime})" if first_item_datetime else ""
+            print(f"Fetching batch: IDs {batch_ids[0]} to {batch_ids[-1]} ({len(batch_ids)} items){datetime_info}")
 
             # Process fetched items and collect usernames for this batch
             batch_usernames: set[str] = set()
